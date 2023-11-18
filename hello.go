@@ -18,6 +18,7 @@ const monitoringQuantity = 5
 
 func main() {
 	showIntro()
+	sites := getSitesFromFile()
 	for {
 		showMenu()
 
@@ -26,9 +27,9 @@ func main() {
 
 		switch command {
 		case 1:
-			initializeMonitoring()
+			initializeMonitoring(sites)
 		case 2:
-			fmt.Println("Exibindo logs...")
+			printLogs()
 		case 0:
 			fmt.Println("Saindo do programa...")
 			os.Exit(0)
@@ -39,11 +40,21 @@ func main() {
 	}
 }
 
-func initializeMonitoring() {
+func printLogs() {
+	file, err := os.ReadFile("log.txt")
+	handleErr(err)
+
+	fileContent := string(file)
+	newFileContent := strings.ReplaceAll(fileContent, ",", " - ")
+
+	fmt.Println(newFileContent)
+}
+
+func initializeMonitoring(sites []string) {
 	fmt.Println("Monitorando...")
 
 	for i := 0; i < monitoringQuantity; i++ {
-		for siteNumber, siteName := range getSitesFromFile() {
+		for siteNumber, siteName := range sites {
 			verifySiteIsOnline(siteName, siteNumber)
 		}
 		time.Sleep(monitoringDelay)
@@ -70,7 +81,8 @@ func registerLog(siteName string, online bool) {
 	file, err := os.OpenFile("log.txt", syscall.O_CREAT|syscall.O_RDWR|syscall.O_APPEND, 0666)
 	handleErr(err)
 
-	logPhrase := siteName + " - online: " + strconv.FormatBool(online) + "\n"
+	logTime := time.Now().Format("02/01/2006 15:04:05")
+	logPhrase := logTime + "," + siteName + "," + strconv.FormatBool(online) + "\n"
 	file.WriteString(logPhrase)
 
 	file.Close()

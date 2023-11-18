@@ -1,10 +1,13 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"io"
 	"math/rand"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -39,7 +42,7 @@ func initializeMonitoring() {
 	fmt.Println("Monitorando...")
 
 	for i := 0; i < monitoringQuantity; i++ {
-		for siteNumber, siteName := range getSitesSlice() {
+		for siteNumber, siteName := range getSitesFromFile() {
 			verifySiteIsOnline(siteName, siteNumber)
 		}
 		time.Sleep(monitoringDelay)
@@ -49,7 +52,8 @@ func initializeMonitoring() {
 
 func verifySiteIsOnline(siteName string, number int) {
 	site := getSiteToDoRequest()
-	resp, _ := http.Get(site)
+	resp, err := http.Get(site)
+	handleErr(err)
 
 	fmt.Println("Testando site", number, ":", siteName)
 	if resp.StatusCode == 200 {
@@ -59,8 +63,39 @@ func verifySiteIsOnline(siteName string, number int) {
 	}
 }
 
-func getSitesSlice() []string {
-	return []string{"https://twitter.com", "https://instagram.com", "https://globo.com"}
+func getSitesFromFile() []string {
+	//assim lemos o arquivo inteiro
+	//file, err := os.ReadFile("sites")
+
+	//assim apenas abrimos o arquivo
+	file, err := os.Open("sites")
+	handleErr(err)
+
+	reader := bufio.NewReader(file)
+
+	var sites []string
+	for {
+		line, err := reader.ReadString('\n')
+
+		if handleErr(err) && err == io.EOF {
+			break
+		}
+
+		line = strings.TrimSpace(line)
+		sites = append(sites, line)
+	}
+
+	file.Close()
+
+	return sites
+}
+
+func handleErr(err error) bool {
+	if err != nil {
+		fmt.Println("Ocorreu um erro:", err)
+		return true
+	}
+	return false
 }
 
 func getSiteToDoRequest() string {

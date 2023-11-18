@@ -7,7 +7,9 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -16,7 +18,6 @@ const monitoringQuantity = 5
 
 func main() {
 	showIntro()
-
 	for {
 		showMenu()
 
@@ -58,17 +59,25 @@ func verifySiteIsOnline(siteName string, number int) {
 	fmt.Println("Testando site", number, ":", siteName)
 	if resp.StatusCode == 200 {
 		fmt.Println("Site", siteName, "foi carregado com sucesso.")
+		registerLog(siteName, true)
 	} else {
 		fmt.Println("Site", siteName, "está com problemas. Status code:", resp.StatusCode)
+		registerLog(siteName, false)
 	}
 }
 
-func getSitesFromFile() []string {
-	//assim lemos o arquivo inteiro
-	//file, err := os.ReadFile("sites")
+func registerLog(siteName string, online bool) {
+	file, err := os.OpenFile("log.txt", syscall.O_CREAT|syscall.O_RDWR|syscall.O_APPEND, 0666)
+	handleErr(err)
 
-	//assim apenas abrimos o arquivo
-	file, err := os.Open("sites")
+	logPhrase := siteName + " - online: " + strconv.FormatBool(online) + "\n"
+	file.WriteString(logPhrase)
+
+	file.Close()
+}
+
+func getSitesFromFile() []string {
+	file, err := os.Open("sites.txt")
 	handleErr(err)
 
 	reader := bufio.NewReader(file)
